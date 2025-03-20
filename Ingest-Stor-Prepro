@@ -1,0 +1,63 @@
+# Data Ingestion, Storage, and Preprocessing
+
+import pandas as pd
+from sklearn.preprocessing import MinMaxScaler
+
+def ingest_and_preprocess_data(file_path, storage_path="preprocessed_data.csv"):
+    """
+    Ingiere, almacena y preprocesa datos desde un archivo.
+
+    Args:
+        file_path (str): La ruta al archivo de datos.
+        storage_path (str, optional): La ruta donde se almacenarán los datos preprocesados.
+                              Por defecto es "preprocessed_data.csv".
+    """
+
+    try:
+        # 1. Ingestión y almacenamiento de datos
+        # Leer los datos desde el archivo (asumiendo CSV)
+        data = pd.read_csv(file_path)
+
+        # Almacenar los datos originales (opcional)
+        original_data_path = "original_data.csv"  # Ruta para almacenar los datos originales
+        data.to_csv(original_data_path, index=False)
+        print(f"Datos originales almacenados en: {original_data_path}")
+
+        # 2. Preprocesamiento de datos
+        # 2.1 Limpieza de datos
+        # Manejar valores faltantes (ejemplo: eliminar filas con valores faltantes)
+        data = data.dropna()
+
+        # Manejar duplicados (ejemplo: eliminar filas duplicadas)
+        data = data.drop_duplicates()
+
+        # 2.2 Transformación de datos
+        # Ejemplo: Convertir una columna a un tipo de dato diferente (ejemplo: de object a datetime)
+        # data['fecha'] = pd.to_datetime(data['fecha'])
+
+        # Ejemplo: Crear nuevas columnas a partir de las existentes (ejemplo: calcular una nueva característica)
+        # data['nueva_caracteristica'] = data['columna1'] + data['columna2']
+
+        # 2.3 Normalización de datos
+        # Normalizar las columnas numéricas (ejemplo: MinMaxScaler)
+        numeric_cols = data.select_dtypes(include=['number']).columns
+        scaler = MinMaxScaler()
+        data[numeric_cols] = scaler.fit_transform(data[numeric_cols])
+
+        # 3. Almacenamiento de datos preprocesados
+        # Guardar los datos preprocesados
+        data.to_csv(storage_path, index=False)
+        print(f"Datos preprocesados y almacenados en: {storage_path}")
+
+        # Imprimir las primeras filas del DataFrame preprocesado
+        print("Datos preprocesados:")
+        print(data.head())
+
+    except FileNotFoundError:
+        print(f"Error: Archivo no encontrado en: {file_path}")
+    except Exception as e:
+        print(f"Ocurrió un error durante la ingestión, almacenamiento o preprocesamiento: {e}")
+
+# Ejemplo de uso
+file_path = "data.csv"  # Reemplazar con la ruta al archivo de datos
+ingest_and_preprocess_data(file_path)

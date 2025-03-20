@@ -1,0 +1,75 @@
+#------------- Extracción y carga de datos (HDFS):
+from pyspark.sql import SparkSession
+
+# Inicializar SparkSession
+spark = SparkSession.builder.appName("TurismoBigData").getOrCreate()
+
+# Cargar datos desde múltiples fuentes (ejemplo: archivos CSV)
+datos_turismo = spark.read.csv("hdfs:///datos/turismo/*.csv", header=True, inferSchema=True)
+
+# Almacenar datos en HDFS
+datos_turismo.write.parquet("hdfs:///datos/turismo_parquet")
+
+
+#------------- Procesamiento y análisis de datos (Spark):
+from pyspark.sql.functions import *
+
+# Cargar datos desde HDFS
+datos_turismo_parquet = spark.read.parquet("hdfs:///datos/turismo_parquet")
+
+# Análisis de demanda turística
+demanda_por_region = datos_turismo_parquet.groupBy("region").agg(count("*").alias("total_visitas"))
+
+# Predicción de demanda (ejemplo simplificado)
+from pyspark.ml.regression import LinearRegression
+from pyspark.ml.feature import VectorAssembler
+
+# Preparar datos para modelo de regresión
+assembler = VectorAssembler(inputCols=["mes"], outputCol="features")
+datos_modelo = assembler.transform(datos_turismo_parquet.groupBy("mes").agg(count("*").alias("total_visitas")).orderBy("mes"))
+
+# Entrenar modelo de regresión lineal
+lr = LinearRegression(featuresCol="features", labelCol="total_visitas")
+modelo = lr.fit(datos_modelo)
+
+# Realizar predicciones
+predicciones = modelo.transform(datos_modelo)
+
+# Mostrar resultados
+predicciones.show()
+
+#------------- Almacenamiento de datos NoSQL:
+    #MongoDB (comentarios y redes sociales):
+
+from pymongo import MongoClient
+
+# Conexión a MongoDB
+cliente_mongo = MongoClient("mongodb://localhost:27017/")
+db_mongo = cliente_mongo["turismo_db"]
+coleccion_comentarios = db_mongo["comentarios"]
+
+# Insertar datos (ejemplo)
+comentario = {"usuario": "Juan", "texto": "Excelente destino", "region": "Costa Rica"}
+coleccion_comentarios.insert_one(comentario)
+
+#------------- Cassandra (datos de alta disponibilidad):
+from cassandra.cluster import Cluster
+
+# Conexión a Cassandra
+cluster_cassandra = Cluster(["localhost"])
+session_cassandra = cluster_cassandra.connect("turismo_keyspace")
+
+# Crear tabla (si no existe)
+session_cassandra.execute("""
+    CREATE TABLE IF NOT EXISTS visitas (
+        region text,
+        fecha date,
+        visitas int,
+        PRIMARY KEY (region, fecha)
+    )
+""")
+
+# Insertar datos (ejemplo)
+session_cassandra.execute("""
+    INSERT INTO visitas (region, fecha, visitas) VALUES (%s, %s, %s)
+""", ("Costa Rica", "2023-10-26", 1000))
